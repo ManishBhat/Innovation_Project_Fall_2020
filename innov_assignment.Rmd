@@ -1,0 +1,79 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Loading data
+
+## Summary
+This is a dataset about Innovation and Institutional Ownership.
+
+## Description
+Firm-level panel data on innovation and institutional ownership from 1991 to 1999 over 803 firms. The observations refer to different firms over different years.
+
+## Important variables
+
+Lerner index is a measure of a firm's market power. It is defined as $ L = \frac{P- MC}{P}$, where P is the market price set by the firm and MC is the firm's marginal cost.
+L = 0 indicates that firm has no market power.
+
+Further, the Lerner Rule or Lerner condition is that in order to maximize firm profit, firm choose P such that $ L = \frac{P- MC}{P} =  \frac{-1}{E_d}$ where $E_d$ is the elasticity of demand facing the firm.
+
+```{r}
+pacman::p_load(pacman, tidyverse, plm, car, gplots)
+df <- read.csv("https://www.key2stats.com/Innovation_and_Institutional_Ownership_1119_61.csv")
+df_panelData <- pdata.frame(df, index=c("company","year"), drop.index = TRUE, row.names=TRUE)
+```
+
+# Descriptive data analysis
+
+## Sales across the firms
+
+As can be seen the median sales are 544 million \$, and the 1st & 4th quartiles are 151 million \$ and 2297 million \$. But, the mean being 3411 million \$ shows the large influence of a few huge firms, the largest of which has sales of 168.9 billion in a given year\$.
+```{r}
+hist(df$sales)
+summary(df$sales)
+df[which.max(df$sales),]
+boxplot(df$sales, ylim = c(0, 5000))
+```
+
+```{r}
+reg1 <- lm(sales~year, data=df) 
+summary(reg1)
+ggplot(df, aes(y=sales,x=year))+geom_point()+geom_smooth(method="lm") + ggtitle("Sales vs Years")+ xlab("Year")+ylab("Sales")
+```
+
+## Plots of heterogeneity across the years
+```{r}
+plotmeans(sales ~ year, main="Heterogeineity of sales across years", data=df)
+plotmeans(employment ~ year, main="Heterogeineity of employment across years", data=df)
+plotmeans(value ~ year, main="Heterogeineity of value across years", data=df)
+plotmeans(transient ~ year, main="Heterogeineity of share of 'transient' institutional owners across years", data=df)
+plotmeans(dedicated ~ year, main="Heterogeineity of share of 'dedicated' institutional owners across years", data=df)
+plotmeans(patents ~ year, main="Heterogeineity of patents across years", data=df)
+```
+
+
+```{r}
+plot(df$sales, df$value)
+ggplot(df, aes(y=value,x=sales))+geom_point()+geom_smooth(method="lm") + ggtitle("Sales vs Stock Market Value")+ xlab("Sales")+ylab("Stock market value")
+
+df$quartile <- ntile(df[,'sales'], 4)  
+temp_data <-  df[df$quartile == 2 | df$quartile == 3,]
+ggplot(temp_data, aes(y=value,x=sales))+geom_point()+geom_smooth(method="lm") + ggtitle("Sales vs Stock Market Value")+ xlab("Sales")+ylab("Stock market value")
+```
+
+```{r}
+## regression formulas
+f1 <- cites ~ institutions + log(capital/employment) + log(sales) + industry + year
+f2 <- cites ~ institutions + log(capital/employment) + log(sales) +
+  industry + year + lograndd + drandd
+f3 <- cites ~ institutions + log(capital/employment) + log(sales) +
+  industry + year + lograndd + drandd + dprecites + log(precites)
+
+summary(lm(f1, data = df))
+```
+
+```{r}
+
+```
+
